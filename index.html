@@ -8,7 +8,7 @@
   <!-- Video.js CSS -->
   <link href="https://vjs.zencdn.net/8.5.2/video-js.css" rel="stylesheet" />
 
-  <!-- Video.js Quality Selector Plugin -->
+  <!-- HTTP Source Selector Plugin -->
   <script src="https://cdn.jsdelivr.net/npm/videojs-http-source-selector@1.1.6/dist/videojs-http-source-selector.min.js"></script>
 
   <style>
@@ -18,36 +18,97 @@
       height: 100%;
       background-color: black;
     }
+
     .video-container {
-      height: 100vh;
       width: 100vw;
+      height: 100vh;
     }
+
     .video-js {
       width: 100% !important;
       height: 100% !important;
-      object-fit: fill;
+    }
+
+    .popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+    }
+
+    .popup-content {
+      background: #1f1f1f;
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 90%;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    .popup-content a {
+      display: inline-block;
+      margin-top: 10px;
+      color: #00acee;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .popup-content button {
+      margin-top: 15px;
+      background-color: #00acee;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+
   <div class="video-container">
     <video id="liveStream" class="video-js vjs-default-skin" controls autoplay playsinline>
-      <source src="https://dai.fancode.com/primary/127336_english_hls_35185ta-di_h264/index.m3u8" type="application/x-mpegURL" />
+      <source src="https://bcovlive-a.akamaihd.net/b238876e5f004ec29d4e07066a044996/eu-west-1/4854911276001/playlist.m3u8" type="application/x-mpegURL" />
       Your browser does not support HLS playback.
     </video>
   </div>
 
-  <!-- Video.js JS -->
+  <!-- Telegram Join Popup -->
+  <div class="popup" id="telegramPopup">
+    <div class="popup-content">
+      <h2><b>Join Our Telegram Channel</b></h2>
+      <p><strong>Get More Match links and updates instantly!</strong></p>
+      <a href="https://t.me/+xdQNNePetGxjYjI1" target="_blank">Join @Ajay18xlivelinks</a><br>
+      <button onclick="closePopup()">Continue to Stream</button>
+    </div>
+  </div>
+
+  <!-- Video.js -->
   <script src="https://vjs.zencdn.net/8.5.2/video.min.js"></script>
   <script>
     const player = videojs('liveStream');
-    player.httpSourceSelector({
-      default: 'auto'
+
+    player.ready(function () {
+      player.httpSourceSelector({ default: 'auto' });
+
+      // CORRECT plugin component name is HttpSourceSelector
+      player.controlBar.addChild('HttpSourceSelector', {});
     });
-    player.on('ready', function () {
-      player.httpSourceSelector();
+
+    function closePopup() {
+      document.getElementById('telegramPopup').style.display = 'none';
+    }
+
+    window.addEventListener('load', () => {
+      document.getElementById('telegramPopup').style.display = 'flex';
     });
   </script>
 </body>
 </html>
-
