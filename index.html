@@ -2,14 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live Match Stream</title>
-
-  <!-- Video.js CSS -->
-  <link href="https://vjs.zencdn.net/8.5.2/video-js.css" rel="stylesheet" />
-
-  <!-- HTTP Source Selector Plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/videojs-http-source-selector@1.1.6/dist/videojs-http-source-selector.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title id="pageTitle">Live Match</title>
 
   <style>
     html, body {
@@ -17,98 +11,182 @@
       padding: 0;
       height: 100%;
       background-color: black;
+      font-family: Arial, sans-serif;
     }
 
-    .video-container {
+    #videoContainer {
       width: 100vw;
       height: 100vh;
+      position: relative;
+      overflow: hidden;
     }
 
-    .video-js {
-      width: 100% !important;
-      height: 100% !important;
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: black;
+    }
+
+    .viewer-count {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background-color: rgba(0,0,0,0.7);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: white;
+      z-index: 5;
+    }
+
+    #loadingScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      color: white;
+      font-size: 18px;
+    }
+
+    #spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #00acee;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .popup {
       position: fixed;
       top: 0;
       left: 0;
-      height: 100%;
-      width: 100%;
+      height: 100vh;
+      width: 100vw;
+      background-color: rgba(0, 0, 0, 0.9);
       display: flex;
       justify-content: center;
       align-items: center;
-      background: rgba(0, 0, 0, 0.7);
       z-index: 1000;
     }
 
     .popup-content {
-      background: #1f1f1f;
-      color: white;
-      padding: 30px;
+      background-color: #1e1e1e;
+      color: #fff;
+      padding: 25px 30px;
       border-radius: 12px;
       text-align: center;
       max-width: 90%;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      box-shadow: 0 0 10px #00acee;
     }
 
     .popup-content a {
-      display: inline-block;
-      margin-top: 10px;
       color: #00acee;
-      text-decoration: none;
       font-weight: bold;
+      text-decoration: none;
     }
 
     .popup-content button {
       margin-top: 15px;
-      background-color: #00acee;
-      color: white;
       padding: 10px 20px;
       border: none;
-      border-radius: 8px;
+      background-color: #00acee;
+      color: white;
+      border-radius: 6px;
+      font-size: 16px;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <div class="video-container">
-    <video id="liveStream" class="video-js vjs-default-skin" controls autoplay playsinline>
-      <source src="https://dai.google.com/linear/hls/event/4OSTZFcrSgyMfJH96CxZEg/master.m3u8" type="application/x-mpegURL" />
-      Your browser does not support HLS playback.
-    </video>
+  <!-- Loading screen -->
+  <div id="loadingScreen">
+    <div id="spinner"></div>
+    <span>Loading stream...</span>
   </div>
 
-  <!-- Telegram Join Popup -->
+  <!-- Viewer counter -->
+  <div class="viewer-count" id="viewerCounter">👀 Viewers: 0</div>
+
+  <!-- Video container -->
+  <div id="videoContainer">
+    <video id="video" controls autoplay playsinline></video>
+  </div>
+
+  <!-- Telegram popup -->
   <div class="popup" id="telegramPopup">
     <div class="popup-content">
-      <h2><b>Join Our Telegram Channel</b></h2>
-      <p><strong>Get More Match links and updates instantly!</strong></p>
-      <a href="https://t.me/+xdQNNePetGxjYjI1" target="_blank">Join @Ajay18xlivelinks</a><br>
+      <h2>Join our Telegram Channel for Match Updates!</h2>
+      <p><a href="https://t.me/+xdQNNePetGxjYjI1" target="_blank">Click here to join</a></p>
       <button onclick="closePopup()">Continue to Stream</button>
     </div>
   </div>
 
-  <!-- Video.js -->
-  <script src="https://vjs.zencdn.net/8.5.2/video.min.js"></script>
+  <!-- HLS.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
   <script>
-    const player = videojs('liveStream');
+    const video = document.getElementById('video');
+    const streamUrl = "https://dai.google.com/linear/hls/event/3P50KOs5TUiT7hENYdg4Cg/master.m3u8"; // Your stream here
 
-    player.ready(function () {
-      player.httpSourceSelector({ default: 'auto' });
+    // Use HLS.js if supported
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        video.play();
+        document.getElementById("loadingScreen").style.display = "none";
+      });
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        console.error("HLS.js error:", data);
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = streamUrl;
+      video.addEventListener('loadedmetadata', function () {
+        video.play();
+        document.getElementById("loadingScreen").style.display = "none";
+      });
+    } else {
+      alert("HLS is not supported in this browser.");
+    }
 
-      // CORRECT plugin component name is HttpSourceSelector
-      player.controlBar.addChild('HttpSourceSelector', {});
-    });
-
+    // Telegram popup
     function closePopup() {
       document.getElementById('telegramPopup').style.display = 'none';
     }
 
-    window.addEventListener('load', () => {
+    window.onload = () => {
       document.getElementById('telegramPopup').style.display = 'flex';
-    });
+    };
+
+    // Viewer counter
+    function updateViewerCount() {
+      const viewers = Math.floor(300 + Math.random() * 1000);
+      document.getElementById("viewerCounter").innerText = `👀 Viewers: ${viewers}`;
+    }
+    updateViewerCount();
+    setInterval(updateViewerCount, 8000);
+
+    // Auto title update
+    setInterval(() => {
+      document.title = "Live Match - " + new Date().toLocaleTimeString();
+    }, 10000);
   </script>
 </body>
 </html>
+
